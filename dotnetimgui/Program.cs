@@ -1,34 +1,25 @@
-﻿using Hexa.NET.GLFW;
-using Hexa.NET.ImGui;
+﻿using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.Vulkan;
+using Silk.NET.Windowing;
 using System.Runtime.CompilerServices;
 
-using GLFWmonitorPtr = Hexa.NET.GLFW.GLFWmonitorPtr;
-using GLFWwindowPtr = Hexa.NET.GLFW.GLFWwindowPtr;
+using GLFWwindowPtr = Hexa.NET.ImGui.Backends.GLFW.GLFWwindowPtr;
 
 unsafe
 {
-  // Optional: set an error callback if available in your environment.
-  // If NativeCallback is unavailable, skip setting the error callback.
-  //GLFW.SetErrorCallback(error);
-
-  if (GLFW.Init() == 0)
+  var opts = WindowOptions.Default;
+  opts.Title = "Hexa.NET ImGui GLFW+Vulkan";
+  opts.Size = new Silk.NET.Maths.Vector2D<int>(1280, 800);
+  opts.API = GraphicsAPI.None; // Vulkan surface, no GL context
+  using var view = Window.Create(opts);
+  view.Initialize();
+  if (!view.Native.Glfw.HasValue)
   {
-    Console.WriteLine("Failed to initialize GLFW");
+    Console.WriteLine("Silk.NET did not provide a GLFW window pointer.");
     return;
   }
-
-  GLFW.WindowHint(GLFW.GLFW_CLIENT_API, GLFW.GLFW_NO_API); // Vulkan: no OpenGL context
-  var mon = GLFW.GetPrimaryMonitor();
-  float mainScale = ImGuiImplGLFW.GetContentScaleForMonitor(Unsafe.BitCast<GLFWmonitorPtr, Hexa.NET.ImGui.Backends.GLFW.GLFWmonitorPtr>(mon));
-  GLFWwindowPtr window = GLFW.CreateWindow((int)(1280 * mainScale), (int)(800 * mainScale), "Hexa.NET ImGui GLFW+Vulkan", null, null);
-  if (window.IsNull)
-  {
-    Console.WriteLine("Failed to create GLFW window.");
-    GLFW.Terminate();
-    return;
-  }
+  GLFWwindowPtr window = new GLFWwindowPtr((GLFWwindow*)view.Native.Glfw!.Value);
 
   var guiContext = ImGui.CreateContext();
   ImGui.SetCurrentContext(guiContext);
@@ -39,16 +30,15 @@ unsafe
   ImGui.StyleColorsDark();
 
   var style = ImGui.GetStyle();
+  float mainScale = 1.0f;
   style.ScaleAllSizes(mainScale);
   style.FontScaleDpi = mainScale;
   io.ConfigDpiScaleFonts = true;
 
   ImGuiImplGLFW.SetCurrentContext(guiContext);
-  if (!ImGuiImplGLFW.InitForVulkan(Unsafe.BitCast<GLFWwindowPtr, Hexa.NET.ImGui.Backends.GLFW.GLFWwindowPtr>(window), true))
+  if (!ImGuiImplGLFW.InitForVulkan(window, true))
   {
     Console.WriteLine("Failed to initialize ImGui GLFW backend for Vulkan.");
-    GLFW.DestroyWindow(window);
-    GLFW.Terminate();
     return;
   }
 
@@ -63,11 +53,11 @@ unsafe
 
   bool showHello = true;
 
-  while (GLFW.WindowShouldClose(window) == 0)
+  while (!view.IsClosing)
   {
-    GLFW.PollEvents();
+    view.DoEvents();
 
-    if (GLFW.GetWindowAttrib(window, GLFW.GLFW_ICONIFIED) != 0)
+    if (!view.IsVisible)
     {
       ImGuiImplGLFW.Sleep(10);
       continue;
@@ -99,6 +89,5 @@ unsafe
   ImGuiImplGLFW.Shutdown();
   ImGui.DestroyContext();
 
-  GLFW.DestroyWindow(window);
-  GLFW.Terminate();
+  view.Close();
 }
