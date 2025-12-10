@@ -20,3 +20,18 @@ It should render a simple ImGui window with some text only.
 * MUST use Vulkan ImGui backend
 * MUST use either GLFW or SDL2 or SDL3 for windowing
 
+
+
+# MoltenVK SDK
+
+
+```bash
+export DYLD_LIBRARY_PATH=/Users/asherwin/VulkanSDK/1.4.328.1/macOS/lib
+```
+
+# SDL2 SDK
+
+
+```bash
+export DYLD_LIBRARY_PATH=/opt/homebrew/Cellar/sdl2/2.32.10/lib
+```
